@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Spoje">
 <meta name="theme-color" content="#0b5cab">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Navigácia spojov 26.–28. 11. 2026</title>
@@ -58,7 +59,13 @@ li.done .info b,li.done .t{color:var(--done)}
 .gps button{border:0;border-radius:9px;padding:8px 12px;font:700 14px inherit;font-family:inherit;background:var(--acc);color:#fff}
 .gps button.on{background:var(--ok)}
 .gps span{color:var(--mut);min-width:0}
+#map{height:270px;border-radius:16px;border:1px solid var(--line);margin:12px 0 0;z-index:0}
+.mapbtns{display:flex;gap:8px;margin:8px 0 0}
+.mapbtns button{flex:1;border:1px solid var(--line);background:var(--card);color:var(--tx);border-radius:10px;padding:9px;font:600 14px inherit;font-family:inherit}
+.mapbtns button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.lbl{font:700 12px inherit;font-family:inherit}
 </style>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -67,7 +74,9 @@ li.done .info b,li.done .t{color:var(--done)}
   <div class="seg" id="trips" style="margin-top:8px"></div>
   <div class="gps"><span id="gpsinfo">GPS vypnuté</span><button id="gpsbtn">📍 Zapnúť GPS</button></div>
   <div class="hero" id="hero"></div>
-  <ul id="list"></ul>
+  <div id="map"></div>
+  <div class="mapbtns"><button id="fitbtn">⤢ Celá trasa</button><button id="followbtn" class="on">⌖ Sledovať ma</button></div>
+  <ul id="list" style="margin-top:12px"></ul>
   <p class="note" id="notes"></p>
 </div>
 <div class="bar"><div class="in">
@@ -131,7 +140,7 @@ function render(){
   const T=TRIPS[S.trip],s=st();
   if(!avail(S.trip)){
     $("hero").innerHTML=`<small>Spoj ${T.no}</small><div class="nm">V štvrtok nejde</div><div class="hot">Tento spoj ide len v piatok a sobotu.</div>`;
-    $("list").innerHTML="";$("go").disabled=true;$("go").textContent="—";$("dl").innerHTML="";return;
+    $("list").innerHTML="";$("go").disabled=true;$("go").textContent="—";$("dl").innerHTML="";try{updateMap()}catch(e){}return;
   }
   const delay=s.delay,today=isToday();
   // aktuálna "ďalšia" zastávka: podľa označených odchodov
@@ -161,6 +170,7 @@ function render(){
   if(T.no===1)n.push("Spoj 1 začína na zastávke Ďurková (bez odchodu z Mestskej haly).");
   n.push("Meškanie zadaj tlačidlami, alebo klepni na zastávku / veľké tlačidlo – aplikácia ho dopočíta zo skutočného času.");
   $("notes").innerHTML=n.join("<br>");
+  try{updateMap()}catch(e){}
 }
 
 // ---------- AKCIE ----------
@@ -179,6 +189,39 @@ document.addEventListener("click",e=>{
   if(b&&b.id==="go"){const T=TRIPS[S.trip],s=st();if(s.done+1>=T.stops.length){s.done=-1;s.delay=0;save();render()}else mark(s.done+1);return}
   if(li){const i=+li.dataset.stop,s=st();if(s.done===i){s.done=i-1}else mark(i);save();render()}
 });
+
+// ---------- MAPA ----------
+const ROUTE_PL="_}weHi{gmB??Hg@NOFEY_BEMCGBC@C?C@E?C?EAE?CAAACAAAAAAA?AAA?C?A@?K?M?OAq@Gi@i@aDSm@iAyCSu@Ie@]aCKs@Qk@Ys@[w@IUo@{Aq@aB[k@Yk@aD{JOg@I_@WLk@V_@PUJq@XYLqA`@o@PQDE?yCh@qEp@c@Bk@Do@D_ADg@@k@?uASk@Kq@K]@E@SKECAC?CAA?CAAACAAA?CAA?AAA?A@A?A??@[GCEk@o@_BiBWYmAsAIKOOk@q@a@c@QQKI_@]{@a@_A[OEUESGa@KWGg@M_@KYw@aAoBKUGIk@{@W]KMMQg@q@QWQU[c@]e@_BaCMUSSa@_@}@_@aCq@?Ag@O[Ke@UQO_@_@a@cAWmAQsAOuBCOG[?AE}ACuA?wA?MAy@C}@??GoBIgCCs@C]G_@[mA[gAI_@FGHIl@o@h@k@bBoB~CqDFGHIx@gAv@eAFIHIFEPMHKrAwAp@_ATU`@g@bCkCh@i@v@{@NQh@m@j@o@RSFGRQXr@hAdCf@lA^|@bDfIL^JTJ^J\\Np@N|@Lz@Fr@Dp@@V?V?r@?n@?BCj@Cj@GbAQ`CI|@KnAEh@KISMm@_@a@]eA_AaEcDOMYUWU_@_@_@c@_@_@i@s@}DmF]a@MQi@o@s@cA{@eAWSIHGHw@dAy@fAFHh@n@f@^HFTN`@Xb@TFDNJTXPd@FNj@|BFXFHJLPTPTb@j@LPFJDDDFRPTPLJh@^p@`@lAr@HDd@Z@P?RAZCx@IhB?FAZKvB?T?LBLDLFFFF^F`ALnANZDZRnAZTFGn@UtCKtAGl@Gl@Iv@MdAOvBE\\C\\O~AEz@ObBUvBe@xFEn@TDND~@Zz@`@^\\JHPP`@b@h@n@@@NNHJlArAVX~AhBj@n@BDJTBH?B?D@B?B@@@B@@@@@@@@@?@?@?B?BA@Ab@MDA\\Ap@Jj@JtARj@?f@A~@En@Ej@Eb@CpEq@xCi@D?PEn@QpAa@XMp@YTK^Qj@WVMH^Nf@`DzJXj@Zj@p@`Bn@zAHTZv@Xr@Pj@Jr@\\`CHd@Rt@hAxCRl@h@`DFh@@p@?N?L?JC@A@C@AB?BAD?B?B?D@B?@@B?@@@@@@@@@@?@@@?@?@?@A@A@?@ABFDLX~ATtAFVKBYHSIEC";
+function decodePL(str){let i=0,lat=0,lon=0,out=[];while(i<str.length){let b,sh=0,r=0;do{b=str.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5}while(b>=32);lat+=(r&1)?~(r>>1):(r>>1);sh=0;r=0;do{b=str.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5}while(b>=32);lon+=(r&1)?~(r>>1):(r>>1);out.push([lat/1e5,lon/1e5])}return out}
+let map=null,routeLine=null,stopLayer=null,meMark=null,meCirc=null,follow=true;
+function initMap(){
+  if(typeof L==="undefined"){$("map").innerHTML='<div style="padding:20px;color:var(--mut)">Mapa sa nenačítala (chýba internet).</div>';return}
+  map=L.map("map",{zoomControl:true,attributionControl:true}).setView([48.307,18.082],14);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
+  routeLine=L.polyline(decodePL(ROUTE_PL),{color:"#0b5cab",weight:5,opacity:.8}).addTo(map);
+  stopLayer=L.layerGroup().addTo(map);
+  map.fitBounds(routeLine.getBounds(),{padding:[20,20]});
+  map.on("dragstart",()=>{follow=false;$("followbtn").classList.remove("on")});
+}
+function updateMap(){
+  if(!map)return;
+  stopLayer.clearLayers();
+  const T=TRIPS[S.trip],s=st();
+  const nx=avail(S.trip)?s.done+1:-1;
+  T.stops.forEach((p,i)=>{
+    const done=i<=s.done,isNext=i===nx;
+    const c=L.circleMarker(p.ll,{radius:isNext?11:8,weight:3,color:done?"#8b93a1":"#0b5cab",fillColor:isNext?"#0b5cab":(done?"#8b93a1":"#fff"),fillOpacity:1}).addTo(stopLayer);
+    c.bindTooltip((i===0||i===T.stops.length-1?"":i+". ")+p.n.replace(" (príchod)",""),{permanent:isNext,direction:"top",offset:[0,-8]});
+  });
+  if(gps){
+    const ll=[gps.lat,gps.lon];
+    if(!meMark){meCirc=L.circle(ll,{radius:gps.acc,color:"#1d7fd1",weight:1,fillOpacity:.1}).addTo(map);meMark=L.circleMarker(ll,{radius:7,weight:3,color:"#fff",fillColor:"#1d7fd1",fillOpacity:1}).addTo(map)}
+    else{meMark.setLatLng(ll);meCirc.setLatLng(ll);meCirc.setRadius(gps.acc)}
+    if(follow)map.setView(ll,Math.max(map.getZoom(),16),{animate:true});
+  }else if(meMark){map.removeLayer(meMark);map.removeLayer(meCirc);meMark=meCirc=null}
+}
+$("fitbtn").addEventListener("click",()=>{if(map)map.fitBounds(routeLine.getBounds(),{padding:[20,20]});follow=false;$("followbtn").classList.remove("on")});
+$("followbtn").addEventListener("click",()=>{follow=!follow;$("followbtn").classList.toggle("on",follow);if(follow&&gps&&map)map.setView([gps.lat,gps.lon],Math.max(map.getZoom(),16))});
 
 // ---------- GPS ----------
 const R_IN=70,R_OUT=95;
@@ -222,7 +265,7 @@ async function gpsToggle(){
 $("gpsbtn").addEventListener("click",gpsToggle);
 document.addEventListener("visibilitychange",async()=>{if(!document.hidden&&watchId!==null){try{wake=await navigator.wakeLock.request("screen")}catch(e){}}});
 if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
-autoPick();render();
+initMap();autoPick();render();
 setInterval(()=>{if(!document.hidden)render()},15000);
 </script>
 </body>
