@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Spoje">
+<meta name="theme-color" content="#0b5cab">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Navigácia spojov 26.–28. 11. 2026</title>
+<style>
+:root{--bg:#f2f4f8;--card:#fff;--tx:#14181f;--mut:#6b7280;--line:#e5e8ee;--acc:#0b5cab;--ok:#1a9b5a;--late:#d6342c;--early:#1d7fd1;--done:#a3aab6}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#181c23;--tx:#eef1f6;--mut:#99a1b0;--line:#272d38;--acc:#4c9cf0;--ok:#35c27d;--late:#ff6b62;--early:#5db1ff;--done:#566070}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 0 calc(150px + env(safe-area-inset-bottom))}
+.wrap{max-width:560px;margin:0 auto;padding:12px}
+h1{font-size:15px;margin:4px 2px 10px;color:var(--mut);font-weight:600;letter-spacing:.02em}
+.seg{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{flex:none;border:1px solid var(--line);background:var(--card);color:var(--tx);border-radius:10px;padding:8px 12px;font:600 14px inherit;font-family:inherit}
+.seg button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.seg button.off{opacity:.35}
+.days button{flex:1}
+.hero{background:var(--card);border-radius:16px;padding:16px;margin:12px 0;border:1px solid var(--line)}
+.hero small{color:var(--mut);display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.hero .nm{font-size:26px;font-weight:700;margin:2px 0}
+.hero .hot{color:var(--mut);font-size:14px}
+.hero .row{display:flex;align-items:flex-end;justify-content:space-between;margin-top:10px;gap:10px}
+.big{font-size:40px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.cd{font-size:15px;color:var(--mut);text-align:right}
+.cd b{display:block;font-size:22px;color:var(--tx);font-variant-numeric:tabular-nums}
+.badge{display:inline-block;border-radius:8px;padding:3px 9px;font-weight:700;font-size:14px}
+.b0{background:rgba(26,155,90,.15);color:var(--ok)}.bl{background:rgba(214,52,44,.14);color:var(--late)}.be{background:rgba(29,127,209,.14);color:var(--early)}
+ul{list-style:none;margin:0;padding:0;background:var(--card);border-radius:16px;border:1px solid var(--line);overflow:hidden}
+li{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);position:relative}
+li:last-child{border:0}
+.dot{width:14px;height:14px;border-radius:50%;border:3px solid var(--acc);background:var(--card);flex:none;z-index:1}
+li.done .dot{background:var(--done);border-color:var(--done)}
+li.next{background:rgba(11,92,171,.08)}
+li.next .dot{background:var(--acc);box-shadow:0 0 0 4px rgba(76,156,240,.3)}
+.info{flex:1;min-width:0}
+.info b{display:block;font-size:17px}
+.info span{color:var(--mut);font-size:13px}
+li.done .info b,li.done .t{color:var(--done)}
+.t{text-align:right;font-variant-numeric:tabular-nums;font-size:20px;font-weight:700}
+.t s{display:block;font-size:12px;font-weight:400;color:var(--mut)}
+.note{color:var(--mut);font-size:12.5px;margin:12px 4px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+.bar .in{max-width:560px;margin:0 auto}
+.lab{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:14px;color:var(--mut)}
+.ctl{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.ctl button,.go{border:0;border-radius:12px;padding:13px 0;font:700 17px inherit;font-family:inherit;background:var(--bg);color:var(--tx)}
+.go{width:100%;margin-bottom:8px;background:var(--acc);color:#fff;font-size:17px}
+.go:disabled{opacity:.4}
+.ctl button:active,.go:active{transform:scale(.97)}
+.gps{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:14px}
+.gps button{border:0;border-radius:9px;padding:8px 12px;font:700 14px inherit;font-family:inherit;background:var(--acc);color:#fff}
+.gps button.on{background:var(--ok)}
+.gps span{color:var(--mut);min-width:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CESTOVNÝ PORIADOK OBJEDNANEJ PREPRAVY · 26.–28. 11. 2026</h1>
+  <div class="seg days" id="days"></div>
+  <div class="seg" id="trips" style="margin-top:8px"></div>
+  <div class="gps"><span id="gpsinfo">GPS vypnuté</span><button id="gpsbtn">📍 Zapnúť GPS</button></div>
+  <div class="hero" id="hero"></div>
+  <ul id="list"></ul>
+  <p class="note" id="notes"></p>
+</div>
+<div class="bar"><div class="in">
+  <button class="go" id="go"></button>
+  <div class="lab"><span>Meškanie</span><span id="dl"></span></div>
+  <div class="ctl">
+    <button data-d="-5">−5</button><button data-d="-1">−1</button><button data-d="0">0</button><button data-d="1">+1</button><button data-d="5">+5</button>
+  </div>
+</div></div>
+<script>
+// ---------- DATA (podľa PDF) ----------
+const STOPS=[
+ {ll:[48.29664,18.06789],n:"Mestská hala",km:0.0,h:""},
+ {ll:[48.31349,18.08309],n:"Ďurková",km:2.6,h:"H11",p:"A"},
+ {ll:[48.31478,18.08766],n:"Divadlo Andreja Bagara",km:2.9,h:"City, Zobor",p:"A"},
+ {ll:[48.30759,18.09054],n:"Univerzity",km:4.5,h:"River",p:"A"},
+ {ll:[48.31001,18.08744],n:"Palárikova",km:5.7,h:"Grand Sole",p:"A"},
+ {ll:[48.3078,18.07783],n:"Hollého",km:6.7,h:"Mikádo",p:"B"},
+ {ll:[48.29663,18.06767],n:"Mestská hala (príchod)",km:8.5,h:""}
+];
+const m=s=>{if(!s)return null;const[a,b]=s.split(":");return +a*60+ +b};
+const COL={ // stĺpce spojov 1..12; null = spoj tam nezačína / nekončí
+ 0:[null,"6:50","8:20","9:50","11:20","12:50","14:20","15:50","17:20","18:50","20:20","21:50"],
+ 1:["5:28","6:58","8:28","9:58","11:28","12:58","14:28","15:58","17:28","18:58","20:28","21:58"],
+ 2:["5:30","7:00","8:30","10:00","11:30","13:00","14:30","16:00","17:30","19:00","20:30","22:00"],
+ 3:["5:37","7:07","8:37","10:07","11:37","13:07","14:37","16:07","17:37","19:07","20:37","22:07"],
+ 4:["5:42","7:12","8:42","10:12","11:42","13:12","14:42","16:12","17:42","19:12","20:42","22:12"],
+ 5:["5:47","7:17","8:47","10:17","11:47","13:17","14:47","16:17","17:47","19:17","20:47","22:17"],
+ 6:["5:55","7:25","8:55","10:25","11:55","13:25","14:55","16:25","17:55","19:25","20:55",null]};
+const KMS=[5.9,8.5,8.5,8.5,8.5,8.5,8.5,8.5,8.5,8.5,8.5,6.7];
+const TRIPS=[...Array(12)].map((_,i)=>({no:i+1,km:KMS[i],
+  stops:STOPS.map((s,k)=>({...s,t:m(COL[k][i])})).filter(s=>s.t!==null),
+  onlyFriSat:i>=10, satEarly:i===11}));
+const DAYS=[{n:"Štvrtok",s:"26. 11.",d:4},{n:"Piatok",s:"27. 11.",d:5},{n:"Sobota",s:"28. 11.",d:6}];
+
+// ---------- STAV ----------
+const $=id=>document.getElementById(id);
+const fmt=x=>{x=Math.round(x);const h=Math.floor(x/60)%24,mm=((x%60)+60)%60;return h+":"+String(mm).padStart(2,"0")};
+let S={day:0,trip:0,store:{}};
+try{S.store=JSON.parse(localStorage.getItem("spoje26")||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem("spoje26",JSON.stringify(S.store))}catch(e){}};
+const key=()=>S.day+"-"+S.trip;
+const st=()=>S.store[key()]||(S.store[key()]={delay:0,done:-1});
+const nowMin=()=>{const d=new Date();return d.getHours()*60+d.getMinutes()+d.getSeconds()/60};
+const isToday=()=>{const d=new Date();return d.getFullYear()==2026&&d.getMonth()==10&&d.getDate()==26+S.day};
+const avail=i=>!(TRIPS[i].onlyFriSat&&S.day===0);
+
+function autoPick(){
+  const d=new Date();
+  if(d.getFullYear()==2026&&d.getMonth()==10&&d.getDate()>=26&&d.getDate()<=28)S.day=d.getDate()-26;
+  const n=nowMin();
+  let pick=0;
+  for(let i=0;i<12;i++){if(!avail(i))continue;const e=TRIPS[i].stops.at(-1).t;if(n<=e+20){pick=i;break}pick=i}
+  S.trip=pick;
+}
+
+// ---------- RENDER ----------
+function render(){
+  $("days").innerHTML=DAYS.map((d,i)=>`<button class="${i===S.day?'on':''}" data-day="${i}">${d.n}<br><small>${d.s}</small></button>`).join("");
+  $("trips").innerHTML=TRIPS.map((t,i)=>`<button class="${i===S.trip?'on':''} ${avail(i)?'':'off'}" data-trip="${i}">Spoj ${t.no}</button>`).join("");
+  const T=TRIPS[S.trip],s=st();
+  if(!avail(S.trip)){
+    $("hero").innerHTML=`<small>Spoj ${T.no}</small><div class="nm">V štvrtok nejde</div><div class="hot">Tento spoj ide len v piatok a sobotu.</div>`;
+    $("list").innerHTML="";$("go").disabled=true;$("go").textContent="—";$("dl").innerHTML="";return;
+  }
+  const delay=s.delay,today=isToday();
+  // aktuálna "ďalšia" zastávka: podľa označených odchodov
+  let next=s.done+1; if(next>=T.stops.length)next=T.stops.length;
+  $("list").innerHTML=T.stops.map((p,i)=>{
+    const exp=p.t+delay,cls=i<=s.done?"done":(i===next?"next":"");
+    const lab=i===0&&p.n.startsWith("Mestská")?"Odchod":(i===T.stops.length-1?"Príchod":"Odchod");
+    return `<li class="${cls}" data-stop="${i}"><div class="dot"></div><div class="info"><b>${p.n}</b><span>${lab}${p.h?` · hotel ${p.h}`:""} · ${p.km.toFixed(1)} km</span></div><div class="t">${fmt(exp)}${delay?`<s>cestovný poriadok ${fmt(p.t)}</s>`:""}</div></li>`;
+  }).join("");
+  const dbadge=delay===0?`<span class="badge b0">načas</span>`:delay>0?`<span class="badge bl">meškanie +${delay} min</span>`:`<span class="badge be">${-delay} min pred časom</span>`;
+  $("dl").innerHTML=dbadge;
+  if(next>=T.stops.length){
+    $("hero").innerHTML=`<small>Spoj ${T.no}</small><div class="nm">Spoj dokončený ✓</div><div class="hot">${T.km.toString().replace(".",",")} km</div>`;
+    $("go").textContent="↺ Znova od začiatku";$("go").disabled=false;
+  }else{
+    const p=T.stops[next],exp=p.t+delay;
+    let cd="";
+    if(today){const diff=exp-nowMin();cd=diff>=0?`<div class="cd">o<b>${Math.floor(diff)} min</b></div>`:`<div class="cd">po čase<b>${Math.ceil(-diff)} min</b></div>`}
+    $("hero").innerHTML=`<small>${next===0?"Začiatok spoja "+T.no:"Ďalšia zastávka · spoj "+T.no}</small><div class="nm">${p.n}</div><div class="hot">${p.h?"hotel "+p.h+" · ":""}${p.km.toFixed(1)} km od štartu${gpsDist(p)}</div><div class="row"><div class="big">${fmt(exp)}</div>${cd}</div>`;
+    const isLast=next===T.stops.length-1;
+    $("go").textContent=(isLast?"Dorazili sme na ":"Odišli sme z ")+p.n.replace(" (príchod)","");
+    $("go").disabled=false;
+  }
+  const n=[];
+  if(S.day===0)n.push("Štvrtok: spoje 11 a 12 nejdú (len piatok a sobota).");
+  if(T.satEarly)n.push("Sobota: odchod posledného spoja môže byť skôr – podľa pokynu organizátora.");
+  if(T.no===1)n.push("Spoj 1 začína na zastávke Ďurková (bez odchodu z Mestskej haly).");
+  n.push("Meškanie zadaj tlačidlami, alebo klepni na zastávku / veľké tlačidlo – aplikácia ho dopočíta zo skutočného času.");
+  $("notes").innerHTML=n.join("<br>");
+}
+
+// ---------- AKCIE ----------
+function mark(i){
+  const T=TRIPS[S.trip],s=st();
+  if(i<0)return;
+  s.done=i;
+  if(isToday()){s.delay=Math.round(nowMin()-T.stops[i].t)}
+  save();render();
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button"),li=e.target.closest("li");
+  if(b&&b.dataset.day!==undefined){S.day=+b.dataset.day;if(!avail(S.trip))S.trip=TRIPS.findIndex((_,i)=>avail(i));render();return}
+  if(b&&b.dataset.trip!==undefined){S.trip=+b.dataset.trip;near=null;render();return}
+  if(b&&b.dataset.d!==undefined){const s=st(),v=+b.dataset.d;s.delay=v===0?0:s.delay+v;save();render();return}
+  if(b&&b.id==="go"){const T=TRIPS[S.trip],s=st();if(s.done+1>=T.stops.length){s.done=-1;s.delay=0;save();render()}else mark(s.done+1);return}
+  if(li){const i=+li.dataset.stop,s=st();if(s.done===i){s.done=i-1}else mark(i);save();render()}
+});
+
+// ---------- GPS ----------
+const R_IN=70,R_OUT=95;
+let watchId=null,gps=null,near=null,wake=null;
+function dist(a,b){const r=Math.PI/180,dLa=(b[0]-a[0])*r,dLo=(b[1]-a[1])*r;const x=Math.sin(dLa/2)**2+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dLo/2)**2;return 12742000*Math.asin(Math.sqrt(x))}
+function gpsDist(p){if(!gps||!p.ll)return"";const d=dist([gps.lat,gps.lon],p.ll);return` · ${d<1000?Math.round(d)+" m":(d/1000).toFixed(1).replace(".",",")+" km"} od teba`}
+function setInfo(t){$("gpsinfo").textContent=t}
+function onPos(p){
+  gps={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy};
+  const T=TRIPS[S.trip],s=st();
+  if(!avail(S.trip)||!isToday()){setInfo("GPS beží (zobrazený spoj nie je dnešný)");render();return}
+  setInfo("GPS ±"+Math.round(gps.acc)+" m");
+  if(gps.acc<=120){
+    if(near!==null&&near>s.done){
+      const i=near,d=dist([gps.lat,gps.lon],T.stops[i].ll);
+      if(i===T.stops.length-1){mark(i);near=null}
+      else if(d>R_OUT){mark(i);near=null}
+    }else{
+      near=null;
+      for(let i=s.done+1;i<Math.min(T.stops.length,s.done+4);i++){
+        if(dist([gps.lat,gps.lon],T.stops[i].ll)<=R_IN){
+          near=i;
+          if(i===T.stops.length-1){mark(i);near=null}
+          break;
+        }
+      }
+    }
+  }
+  render();
+}
+function onErr(e){setInfo(e.code===1?"Poloha zamietnutá – povoľ ju v nastaveniach Safari":"GPS chyba: "+e.message)}
+async function gpsToggle(){
+  const b=$("gpsbtn");
+  if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;gps=null;near=null;b.textContent="📍 Zapnúť GPS";b.classList.remove("on");setInfo("GPS vypnuté");try{wake&&wake.release()}catch(e){}render();return}
+  if(!navigator.geolocation){setInfo("Tento prehliadač nepodporuje GPS");return}
+  setInfo("Hľadám polohu…");
+  watchId=navigator.geolocation.watchPosition(onPos,onErr,{enableHighAccuracy:true,maximumAge:2000,timeout:20000});
+  b.textContent="⏹ Vypnúť GPS";b.classList.add("on");
+  try{wake=await navigator.wakeLock.request("screen")}catch(e){}
+}
+$("gpsbtn").addEventListener("click",gpsToggle);
+document.addEventListener("visibilitychange",async()=>{if(!document.hidden&&watchId!==null){try{wake=await navigator.wakeLock.request("screen")}catch(e){}}});
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+autoPick();render();
+setInterval(()=>{if(!document.hidden)render()},15000);
+</script>
+</body>
+</html>
